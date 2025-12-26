@@ -901,9 +901,8 @@
                             <input 
                                 type="file" 
                                 id="company_profile" 
-                                name="company_profile" 
-                                class="form-file" 
-                                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                name="company_profile[]" 
+                                class="form-file @error('company_profile.*') error @enderror" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple
                             >
                             
                             <div class="file-preview" id="companyProfileList"></div>
@@ -923,7 +922,7 @@
                     <div class="document-column">
                         <div class="document-column-title">
                             <i class="bi bi-file-earmark-check"></i>
-                            NIB (Nomor Induk Berusaha) (Baru)
+                            NIB
                         </div>
                         
                         <div class="form-group">
@@ -934,10 +933,9 @@
                             
                             <input 
                                 type="file" 
-                                id="nib_document" 
-                                name="nib_document" 
-                                class="form-file" 
-                                accept=".pdf,.jpg,.jpeg,.png"
+                                id="company_profile" 
+                                name="company_profile[]"
+                                class="form-file @error('company_profile.*') error @enderror" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple
                             >
                             
                             <div class="file-preview" id="nibDocumentList"></div>
