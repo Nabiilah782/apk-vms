@@ -8,6 +8,8 @@ use App\Models\VendorDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator; 
+use Illuminate\Support\Facades\DB;
 
 class DataVendorController extends Controller
 {
@@ -39,51 +41,80 @@ class DataVendorController extends Controller
     {
         // Debug log
         Log::info('Form Data Received:', $request->all());
-        
-        // Validasi
+    
+        // Validasi - semua field opsional
         $validatedData = $request->validate([
-            'vendor_name' => 'required|string|max:100',
-            'address' => 'required|string',
-            'contact_person' => 'required|string|max:100',
-            'file_path.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:2048',
+            'vendor_name' => 'nullable|string|max:100',
+            'address' => 'nullable|string',
+            'contact_person' => 'nullable|string|max:100',
+            'company_profile' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:2048',
+            'nib_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'service_lists' => 'nullable|string'
         ]);
 
         Log::info('Validated Data:', $validatedData);
 
         try {
+            // Check if all fields are empty (optional but good for validation)
+            $isEmpty = empty($validatedData['vendor_name']) && 
+                   empty($validatedData['address']) && 
+                   empty($validatedData['contact_person']) && 
+                   !$request->hasFile('company_profile') && 
+                   !$request->hasFile('nib_document') && 
+                   empty($request->service_lists);
+
+            if ($isEmpty) {
+                Log::warning('Attempt to save vendor with all empty fields');
+                // You can choose to allow empty vendor or reject
+                // For now, let's allow but log it
+            }
+
             // Create vendor
             $vendor = Vendor::create([
-                'vendor_name' => $validatedData['vendor_name'],
-                'address' => $validatedData['address'],
-                'contact_person' => $validatedData['contact_person'],
+                'vendor_name' => $validatedData['vendor_name'] ?? null,
+                'address' => $validatedData['address'] ?? null,
+                'contact_person' => $validatedData['contact_person'] ?? null,
             ]);
 
             Log::info('Vendor created:', ['id' => $vendor->id]);
 
-            // Upload documents
-            if ($request->hasFile('file_path')) {
-                Log::info('Files found:', ['count' => count($request->file('file_path'))]);
-                
-                foreach ($request->file('file_path') as $file) {
-                    $path = $file->store('vendor_documents', 'public');
-                    
-                    Log::info('File stored:', ['path' => $path]);
-                    
-                    VendorDocument::create([
-                        'vendor_id' => $vendor->id,
-                        'file_path' => $path,
-                    ]);
-                }
+            // Upload Company Profile
+            if ($request->hasFile('company_profile')) {
+                $companyProfile = $request->file('company_profile');
+                $companyProfilePath = $companyProfile->store('vendor_documents/company_profiles', 'public');
+            
+                Log::info('Company Profile stored:', ['path' => $companyProfilePath]);
+            
+                VendorDocument::create([
+                    'vendor_id' => $vendor->id,
+                    'file_path' => $companyProfilePath,
+                    'document_type' => 'company_profile', // Add this field to track document type
+                    'original_name' => $companyProfile->getClientOriginalName(),
+                ]);
+            }
+
+            // Upload NIB Document
+            if ($request->hasFile('nib_document')) {
+                $nibDocument = $request->file('nib_document');
+                $nibDocumentPath = $nibDocument->store('vendor_documents/nib_documents', 'public');
+            
+                Log::info('NIB Document stored:', ['path' => $nibDocumentPath]);
+            
+                VendorDocument::create([
+                    'vendor_id' => $vendor->id,
+                    'file_path' => $nibDocumentPath,
+                    'document_type' => 'nib_document', // Add this field to track document type
+                    'original_name' => $nibDocument->getClientOriginalName(),
+                ]);
             }
 
             // Attach service lists
             if ($request->has('service_lists') && !empty($request->service_lists)) {
                 $serviceLists = json_decode($request->service_lists, true);
-                
+            
                 if (is_array($serviceLists) && count($serviceLists) > 0) {
                     $validServiceIds = ListServiceCatalog::whereIn('id', $serviceLists)->pluck('id')->toArray();
-                    
+                
                     if (count($validServiceIds) > 0) {
                         $vendor->serviceLists()->attach($validServiceIds);
                         Log::info('Service lists attached:', $validServiceIds);
@@ -97,7 +128,7 @@ class DataVendorController extends Controller
         } catch (\Exception $e) {
             Log::error('Error creating vendor: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
-            
+        
             return back()->withInput()
                 ->withErrors(['error' => 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage()]);
         }
@@ -120,60 +151,145 @@ class DataVendorController extends Controller
      * Update the specified resource in storage.
      */
     public function update(Request $request, $id)
-    {
-        $validatedData = $request->validate([
-            'vendor_name' => 'required|string|max:100',
-            'address' => 'required|string',
-            'contact_person' => 'required|string|max:100',
-            'file_path.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:2048',
-            'service_lists' => 'nullable|string'
+{
+    try {
+        $vendor = Vendor::findOrFail($id);
+        
+        // Validate input - semua optional
+        $validator = Validator::make($request->all(), [
+            'vendor_name' => 'nullable|string|max:100',
+            'contact_person' => 'nullable|string|max:100',
+            'address' => 'nullable|string',
+            'service_lists' => 'nullable|string',
+            'documents_to_delete' => 'nullable|string',
+        ], [
+            // Custom messages jika diperlukan
         ]);
-
-        try {
-            $vendor = Vendor::findOrFail($id);
-            
-            // Update vendor
-            $vendor->update([
-                'vendor_name' => $validatedData['vendor_name'],
-                'address' => $validatedData['address'],
-                'contact_person' => $validatedData['contact_person'],
+        
+        // Validasi file hanya jika ada file yang diupload
+        if ($request->hasFile('company_profile')) {
+            $validator->addRules([
+                'company_profile' => 'nullable|array',
+                'company_profile.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:2048',
             ]);
-
-            // Upload new documents
-            if ($request->hasFile('file_path')) {
-                foreach ($request->file('file_path') as $file) {
-                    $path = $file->store('vendor_documents', 'public');
+        }
+        
+        if ($request->hasFile('nib_document')) {
+            $validator->addRules([
+                'nib_document' => 'nullable|array',
+                'nib_document.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            ]);
+        }
+        
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+        
+        DB::beginTransaction();
+        
+        // Update vendor information
+        $vendor->update([
+            'vendor_name' => $request->vendor_name ?? $vendor->vendor_name,
+            'contact_person' => $request->contact_person ?? $vendor->contact_person,
+            'address' => $request->address ?? $vendor->address,
+        ]);
+        
+        // Update service lists
+        if ($request->service_lists) {
+            $serviceLists = json_decode($request->service_lists, true);
+            if (is_array($serviceLists)) {
+                $vendor->serviceLists()->sync($serviceLists);
+            }
+        } elseif ($request->has('service_lists')) {
+            // Jika service_lists dikirim tapi kosong
+            $vendor->serviceLists()->detach();
+        }
+        
+        // Handle documents to delete
+        if ($request->documents_to_delete) {
+            $documentsToDelete = json_decode($request->documents_to_delete, true);
+            if (is_array($documentsToDelete)) {
+                foreach ($documentsToDelete as $documentId) {
+                    $document = VendorDocument::find($documentId);
+                    if ($document && $document->vendor_id == $vendor->id) {
+                        Storage::disk('public')->delete($document->file_path);
+                        $document->delete();
+                    }
+                }
+            }
+        }
+        
+        // Handle company profile uploads
+        if ($request->hasFile('company_profile')) {
+            foreach ($request->file('company_profile') as $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('vendor-documents', 'public');
                     
                     VendorDocument::create([
                         'vendor_id' => $vendor->id,
                         'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_type' => $file->getClientMimeType(),
+                        'document_type' => 'company_profile',
                     ]);
                 }
             }
-
-            // Sync service lists
-            if ($request->has('service_lists') && !empty($request->service_lists)) {
-                $serviceLists = json_decode($request->service_lists, true);
-                
-                if (is_array($serviceLists)) {
-                    $vendor->serviceLists()->sync($serviceLists);
-                } else {
-                    $vendor->serviceLists()->sync([]);
-                }
-            } else {
-                $vendor->serviceLists()->sync([]);
-            }
-
-            return redirect()->route('data_vendors.index')
-                ->with('success', 'Vendor berhasil diperbarui!');
-
-        } catch (\Exception $e) {
-            Log::error('Error updating vendor: ' . $e->getMessage());
-            
-            return back()->withInput()
-                ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()]);
         }
+        
+        // Handle NIB document uploads
+        if ($request->hasFile('nib_document')) {
+            foreach ($request->file('nib_document') as $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('vendor-documents', 'public');
+                    
+                    VendorDocument::create([
+                        'vendor_id' => $vendor->id,
+                        'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_type' => $file->getClientMimeType(),
+                        'document_type' => 'nib_document',
+                    ]);
+                }
+            }
+        }
+        
+        DB::commit();
+        
+        return redirect()->route('data_vendors.index')
+            ->with('success', 'Vendor berhasil diperbarui.');
+            
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()
+            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+            ->withInput();
     }
+}
+
+public function destroyDocument($id)
+{
+    try {
+        $document = VendorDocument::findOrFail($id);
+        
+        // Delete file from storage
+        Storage::disk('public')->delete($document->file_path);
+        
+        // Delete record
+        $document->delete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Dokumen berhasil dihapus.'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menghapus dokumen: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
     /**
      * Remove the specified resource from storage.
