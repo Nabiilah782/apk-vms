@@ -502,6 +502,49 @@
             justify-content: center;
         }
     }
+
+    /* === DOCUMENT COLUMNS === */
+    .document-columns {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .document-column {
+        background: var(--bg-white);
+        border: 1px solid var(--bg-light);
+        border-radius: 10px;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .document-column:hover {
+        border-color: var(--accent-light);
+        box-shadow: 0 4px 8px rgba(8, 15, 92, 0.05);
+    }
+
+    .document-column-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .document-column-title i {
+        color: var(--primary-light);
+        font-size: 16px;
+    }
+
+    .document-help-text {
+        font-size: 12px;
+        color: var(--primary-light);
+        margin-top: 8px;
+        font-style: italic;
+    }
 </style>
 @endpush
 
@@ -511,7 +554,7 @@
     <div class="page-header">
         <div class="page-header-content">
             <h1>Tambah Vendor Baru</h1>
-            <p>Tambahkan informasi vendor, dokumen, dan layanan yang tersedia</p>
+            <p>Tambahkan informasi vendor, dokumen, dan layanan yang tersedia (Semua field opsional)</p>
         </div>
         <a href="{{ route('data_vendors.index') }}" class="btn-primary-action">
             <i class="bi bi-arrow-left"></i> Kembali ke Daftar
@@ -561,12 +604,12 @@
             <div class="form-section">
                 <div class="section-title">
                     <i class="bi bi-info-circle"></i>
-                    Informasi Vendor
+                    Informasi Vendor (Opsional)
                 </div>
                 
                 <!-- Vendor Name -->
                 <div class="form-group">
-                    <label for="vendor_name" class="form-label required">
+                    <label for="vendor_name" class="form-label">
                         <i class="bi bi-building"></i>
                         Nama Vendor
                     </label>
@@ -578,8 +621,7 @@
                             name="vendor_name" 
                             class="form-input @error('vendor_name') error @enderror" 
                             value="{{ old('vendor_name') }}"
-                            placeholder="Masukkan nama vendor"
-                            required
+                            placeholder="Masukkan nama vendor (opsional)"
                             maxlength="100"
                         >
                     </div>
@@ -592,7 +634,7 @@
 
                 <!-- Contact Person -->
                 <div class="form-group">
-                    <label for="contact_person" class="form-label required">
+                    <label for="contact_person" class="form-label">
                         <i class="bi bi-person"></i>
                         Kontak Person
                     </label>
@@ -604,8 +646,7 @@
                             name="contact_person" 
                             class="form-input @error('contact_person') error @enderror" 
                             value="{{ old('contact_person') }}"
-                            placeholder="Masukkan nama kontak person"
-                            required
+                            placeholder="Masukkan nama kontak person (opsional)"
                             maxlength="100"
                         >
                     </div>
@@ -618,7 +659,7 @@
 
                 <!-- Address -->
                 <div class="form-group">
-                    <label for="address" class="form-label required">
+                    <label for="address" class="form-label">
                         <i class="bi bi-geo-alt"></i>
                         Alamat
                     </label>
@@ -628,8 +669,7 @@
                             id="address" 
                             name="address" 
                             class="form-textarea @error('address') error @enderror" 
-                            placeholder="Masukkan alamat lengkap vendor"
-                            required
+                            placeholder="Masukkan alamat lengkap vendor (opsional)"
                             rows="3"
                         >{{ old('address') }}</textarea>
                     </div>
@@ -645,7 +685,7 @@
             <div class="form-section">
                 <div class="section-title">
                     <i class="bi bi-list-check"></i>
-                    Layanan Vendor
+                    Layanan Vendor (Opsional)
                 </div>
                 
                 <div class="form-group">
@@ -660,7 +700,7 @@
                                 type="text" 
                                 id="serviceSearch" 
                                 class="form-input" 
-                                placeholder="Ketik untuk mencari atau pilih layanan..."
+                                placeholder="Ketik untuk mencari atau pilih layanan (opsional)..."
                                 autocomplete="off"
                             >
                         </div>
@@ -682,7 +722,7 @@
                         </div>
                     </div>
                     <small style="display: block; margin-top: 8px; font-size: 12px; color: var(--primary); opacity: 0.6;">
-                        Pilih layanan yang tersedia untuk vendor ini. Klik untuk memilih/deselect.
+                        Pilih layanan yang tersedia untuk vendor ini (opsional). Klik untuk memilih/deselect.
                     </small>
                     @error('service_lists')
                         <div class="error-message">
@@ -696,34 +736,86 @@
             <div class="form-section">
                 <div class="section-title">
                     <i class="bi bi-files"></i>
-                    Dokumen Vendor
+                    Dokumen Vendor (Opsional)
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-upload"></i>
-                        Unggah Dokumen (Opsional)
-                    </label>
-                    
-                    <input 
-                        type="file" 
-                        id="file_path" 
-                        name="file_path[]" 
-                        class="form-file" 
-                        multiple 
-                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                    >
-                    
-                    <div class="file-preview" id="fileList"></div>
-                    
-                    <small style="display: block; margin-top: 8px; font-size: 12px; color: var(--primary); opacity: 0.6;">
-                        Unggah dokumen terkait vendor (kontrak, sertifikat, dll). Maksimal 2MB per file.
-                    </small>
-                    @error('file_path.*')
-                        <div class="error-message">
-                            <i class="bi bi-exclamation-circle"></i> {{ $message }}
+                <div class="document-columns">
+                    <!-- Company Profile Document -->
+                    <div class="document-column">
+                        <div class="document-column-title">
+                            <i class="bi bi-file-earmark-text"></i>
+                            Company Profile
                         </div>
-                    @enderror
+                        
+                        <div class="form-group">
+                            <label for="company_profile" class="form-label">
+                                <i class="bi bi-upload"></i>
+                                Unggah Company Profile
+                            </label>
+                            
+                            <input 
+                                type="file" 
+                                id="company_profile" 
+                                name="company_profile" 
+                                class="form-file" 
+                                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                            >
+                            
+                            <div class="file-preview" id="companyProfileList"></div>
+                            
+                            <div class="document-help-text">
+                                Format: PDF, JPG, PNG, DOC, DOCX. Maksimal 2MB.
+                            </div>
+                            @error('company_profile')
+                                <div class="error-message">
+                                    <i class="bi bi-exclamation-circle"></i> {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- NIB Document -->
+                    <div class="document-column">
+                        <div class="document-column-title">
+                            <i class="bi bi-file-earmark-check"></i>
+                            NIB (Nomor Induk Berusaha)
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="nib_document" class="form-label">
+                                <i class="bi bi-upload"></i>
+                                Unggah Dokumen NIB
+                            </label>
+                            
+                            <input 
+                                type="file" 
+                                id="nib_document" 
+                                name="nib_document" 
+                                class="form-file" 
+                                accept=".pdf,.jpg,.jpeg,.png"
+                            >
+                            
+                            <div class="file-preview" id="nibDocumentList"></div>
+                            
+                            <div class="document-help-text">
+                                Format: PDF, JPG, PNG. Maksimal 2MB.
+                            </div>
+                            @error('nib_document')
+                                <div class="error-message">
+                                    <i class="bi bi-exclamation-circle"></i> {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: var(--bg-light); border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="bi bi-info-circle" style="color: var(--primary);"></i>
+                        <span style="font-size: 13px; color: var(--primary);">
+                            <strong>Catatan:</strong> Semua dokumen bersifat opsional. Anda dapat mengunggah dokumen sekarang atau nanti.
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -871,62 +963,78 @@
             
             // Update global removeService function
             window.removeService = removeService;
-            
-            // Log for debugging
-            console.log('Selected Services:', selectedServices);
-            console.log('JSON String:', selectedServicesInput.value);
         }
         
-        // File upload preview
-        const fileInput = document.getElementById('file_path');
-        const fileList = document.getElementById('fileList');
+        // File upload preview for Company Profile
+        const companyProfileInput = document.getElementById('company_profile');
+        const companyProfileList = document.getElementById('companyProfileList');
         
-        fileInput.addEventListener('change', function() {
-            fileList.innerHTML = '';
+        companyProfileInput.addEventListener('change', function() {
+            updateFilePreview(this, companyProfileList);
+        });
+        
+        // File upload preview for NIB Document
+        const nibDocumentInput = document.getElementById('nib_document');
+        const nibDocumentList = document.getElementById('nibDocumentList');
+        
+        nibDocumentInput.addEventListener('change', function() {
+            updateFilePreview(this, nibDocumentList);
+        });
+        
+        function updateFilePreview(input, container) {
+            container.innerHTML = '';
             
-            if (this.files.length > 0) {
-                Array.from(this.files).forEach((file, index) => {
-                    const fileItem = document.createElement('div');
-                    fileItem.className = 'file-item';
-                    
-                    const fileExtension = file.name.split('.').pop().toLowerCase();
-                    const icon = getFileIcon(fileExtension);
-                    
-                    fileItem.innerHTML = `
-                        <div class="file-info">
-                            <div class="file-icon">
-                                <i class="bi ${icon}"></i>
-                            </div>
-                            <div>
-                                <div style="font-weight: 600; color: var(--primary-dark); font-size: 14px;">
-                                    ${file.name}
-                                </div>
-                                <div style="font-size: 12px; color: var(--primary); opacity: 0.6;">
-                                    ${formatFileSize(file.size)}
-                                </div>
-                            </div>
-                        </div>
-                        <button type="button" class="remove-file" data-index="${index}">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    `;
-                    fileList.appendChild(fileItem);
+            if (input.files.length > 0) {
+                Array.from(input.files).forEach((file, index) => {
+                    const fileItem = createFileItem(file, index, input.id);
+                    container.appendChild(fileItem);
                 });
                 
                 // Add remove file functionality
-                document.querySelectorAll('.remove-file').forEach(button => {
+                container.querySelectorAll('.remove-file').forEach(button => {
                     button.addEventListener('click', function() {
-                        const index = this.getAttribute('data-index');
-                        removeFileFromInput(index);
+                        const inputId = this.getAttribute('data-input-id');
+                        const fileIndex = this.getAttribute('data-index');
+                        removeFileFromInput(inputId, fileIndex);
                         this.parentElement.remove();
                     });
                 });
             }
-        });
+        }
         
-        function removeFileFromInput(index) {
+        function createFileItem(file, index, inputId) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const icon = getFileIcon(fileExtension);
+            
+            fileItem.innerHTML = `
+                <div class="file-info">
+                    <div class="file-icon">
+                        <i class="bi ${icon}"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; color: var(--primary-dark); font-size: 14px;">
+                            ${file.name}
+                        </div>
+                        <div style="font-size: 12px; color: var(--primary); opacity: 0.6;">
+                            ${formatFileSize(file.size)}
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="remove-file" data-input-id="${inputId}" data-index="${index}">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            
+            return fileItem;
+        }
+        
+        function removeFileFromInput(inputId, index) {
+            const input = document.getElementById(inputId);
             const dt = new DataTransfer();
-            const files = fileInput.files;
+            const files = input.files;
             
             for (let i = 0; i < files.length; i++) {
                 if (i !== parseInt(index)) {
@@ -934,7 +1042,7 @@
                 }
             }
             
-            fileInput.files = dt.files;
+            input.files = dt.files;
         }
         
         function getFileIcon(extension) {
@@ -957,7 +1065,7 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
         
-        // Form validation
+        // Form submission
         const form = document.getElementById('vendorForm');
         const submitBtn = document.getElementById('submitBtn');
         
@@ -966,64 +1074,46 @@
             console.log('Selected Services JSON:', selectedServicesInput.value);
             console.log('Form Data:', new FormData(form));
             
-            let isValid = true;
+            // All fields are optional, so no validation needed
+            // Add loading state
+            submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Menyimpan...';
+            submitBtn.disabled = true;
+            submitBtn.classList.add('btn-loading');
             
-            // Clear previous error states
-            document.querySelectorAll('.form-input.error, .form-textarea.error').forEach(input => {
-                input.classList.remove('error');
-            });
+            // Check if form is empty
+            const formData = new FormData(form);
+            let isEmpty = true;
             
-            // Validate required fields
-            const vendorName = document.getElementById('vendor_name');
-            const contactPerson = document.getElementById('contact_person');
-            const address = document.getElementById('address');
-            
-            if (!vendorName.value.trim()) {
-                vendorName.classList.add('error');
-                isValid = false;
-                showError(vendorName, 'Nama vendor wajib diisi');
-            }
-            
-            if (!contactPerson.value.trim()) {
-                contactPerson.classList.add('error');
-                isValid = false;
-                showError(contactPerson, 'Kontak person wajib diisi');
-            }
-            
-            if (!address.value.trim()) {
-                address.classList.add('error');
-                isValid = false;
-                showError(address, 'Alamat wajib diisi');
-            }
-            
-            if (!isValid) {
-                e.preventDefault();
-                // Scroll to first error
-                const firstError = document.querySelector('.form-input.error, .form-textarea.error');
-                if (firstError) {
-                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            for (let [key, value] of formData.entries()) {
+                if (key !== '_token' && key !== 'service_lists') {
+                    if (value && value !== '[]') {
+                        isEmpty = false;
+                        break;
+                    }
                 }
-            } else {
-                // Add loading state
-                submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Menyimpan...';
-                submitBtn.disabled = true;
-                submitBtn.classList.add('btn-loading');
+                if (key === 'service_lists' && value !== '[]') {
+                    isEmpty = false;
+                    break;
+                }
+            }
+            
+            if (isEmpty) {
+                e.preventDefault();
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Simpan Vendor';
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('btn-loading');
+                
+                // Show warning
+                if (confirm('Semua field kosong. Apakah Anda yakin ingin menyimpan vendor tanpa data?')) {
+                    submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Menyimpan...';
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('btn-loading');
+                    return true; // Continue with submission
+                } else {
+                    return false; // Cancel submission
+                }
             }
         });
-        
-        function showError(element, message) {
-            // Remove existing error message
-            const existingError = element.parentElement.nextElementSibling;
-            if (existingError && existingError.classList.contains('error-message')) {
-                existingError.remove();
-            }
-            
-            // Add new error message
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.innerHTML = `<i class="bi bi-exclamation-circle"></i> ${message}`;
-            element.parentElement.parentElement.appendChild(errorDiv);
-        }
         
         // Auto focus first field
         if (document.getElementById('vendor_name')) {
